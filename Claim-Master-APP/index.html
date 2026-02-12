@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-HK" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Claim Master Pro v7</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+
+    <!-- 引入 Excel 處理庫 (SheetJS) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.mini.min.js"></script>
+
+    <style>
+        /* CSS 樣式 (保持型格風格) */
+        :root {
+            --bg: #121212; --card-bg: #1e1e1e; --text-main: #ffffff; --text-sub: #888888;
+            --accent: #00ff9d; --accent-dim: rgba(0, 255, 157, 0.1);
+            --danger: #ff4d4d; --pending: #ffab00; --border: #333; --btn-bg: #333;
+            --salary-color: #00d2ff; --salary-dim: rgba(0, 210, 255, 0.1);
+        }
+        [data-theme="light"] {
+            --bg: #f4f6f8; --card-bg: #ffffff; --text-main: #333333; --text-sub: #666666;
+            --accent: #0066cc; --accent-dim: rgba(0, 102, 204, 0.1); --border: #ddd; --btn-bg: #eee;
+            --salary-color: #0066cc; --salary-dim: rgba(0, 102, 204, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, "SF Mono", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg); color: var(--text-main);
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; transition: 0.3s; padding-bottom: 90px;
+        }
+
+        /* Toolbar & Layout */
+        .toolbar { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .lang-select { background: var(--btn-bg); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; }
+        .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
+        .dashboard { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid var(--border); box-sizing: border-box; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .month-picker { background: var(--bg); color: var(--text-main); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; font-size: 14px; outline: none; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .stat-box { background: var(--bg); padding: 15px; border-radius: 12px; text-align: center; }
+        .stat-box.salary { grid-column: span 2; border: 1px solid var(--salary-color); background: var(--salary-dim); cursor: pointer; position: relative; }
+        .stat-box.salary::after { content: '✎'; position: absolute; right: 15px; top: 15px; color: var(--salary-color); opacity: 0.5; }
+        
+        .label { font-size: 12px; color: var(--text-sub); display: block; margin-bottom: 5px; }
+        .amount { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+        .amount.salary-text { font-size: 28px; color: var(--text-main); }
+        .amount.pending { color: var(--pending); }
+        .amount.claimed { color: var(--accent); }
+        .pending-note { font-size: 10px; color: var(--text-sub); display: block; margin-top: 4px; }
+        
+        .total-in-row { margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .total-in-label { font-size: 14px; color: var(--text-sub); }
+        .total-in-amount { font-size: 24px; color: var(--text-main); font-weight: bold; }
+
+        /* Buttons & List */
+        .tool-row { width:100%; max-width:500px; display:flex; gap:10px; margin-bottom:15px; }
+        .btn-tool { flex: 1; padding: 12px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); border-radius: 10px; font-size: 13px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: bold; }
+        .btn-tool:active { background: var(--bg); }
+        .btn-bulk { width: 100%; max-width: 500px; padding: 12px; background: var(--btn-bg); color: var(--text-main); border: 1px dashed var(--accent); border-radius: 12px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        
+        .list-container { width: 100%; max-width: 500px; }
+        .expense-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--pending); box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+        .expense-card.claimed { border-left-color: var(--accent); opacity: 0.6; }
+        .card-info { flex: 1; cursor: pointer; }
+        .card-amount { text-align: right; margin-left: 15px; cursor: pointer; }
+        .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; display:flex; align-items:center; gap:5px; }
+        .item-date { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; gap: 5px; }
+        .money { font-size: 18px; font-weight: bold; }
+        .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; background: var(--pending); color: #000; font-weight: bold; display: inline-block; margin-top: 5px; }
+        .claimed .status-badge { background: var(--accent); }
+        .delete-btn { background: none; border: none; color: var(--text-sub); padding: 10px; margin-left: 5px; font-size: 18px; z-index: 10; }
+        
+        /* Icons */
+        .icon-tag { font-size: 12px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); color: var(--text-sub); margin-left: 5px; }
+        .icon-tag.has-receipt { color: var(--accent); background: var(--accent-dim); }
+        .receipt-link { color: var(--salary-color); text-decoration: underline; margin-left: 5px; font-size: 12px; }
+
+        /* FAB */
+        .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; background: var(--accent); color: #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 20px rgba(0,255,157,0.4); border: none; cursor: pointer; z-index: 100; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(5px); }
+        .modal { background: var(--card-bg); width: 85%; max-width: 350px; padding: 25px; border-radius: 15px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+        .modal h3 { margin-top: 0; color: var(--accent); }
+        
+        input[type="text"], input[type="date"], input[type="number"] { width: 100%; padding: 12px; margin: 8px 0; background: var(--bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
+        .btn-confirm { background: var(--accent); color: #000; }
+        
+        .checkbox-group { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .checkbox-item { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+        input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+        
+        .photo-btn { width: 100%; padding: 10px; border: 1px dashed var(--text-sub); border-radius: 8px; margin-top: 10px; text-align: center; color: var(--text-sub); cursor: pointer; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; gap: 5px; }
+        #preview-img { width: 100%; border-radius: 8px; margin-top: 10px; display: none; border: 1px solid var(--border); }
+        #receipt-modal img { width: 100%; height: auto; border-radius: 8px; }
+        .salary-list { margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .salary-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14px; }
+        .salary-item:last-child { border: none; }
+        .sal-date { color: var(--text-sub); margin-right: 10px; }
+        .sal-amt { font-weight: bold; color: var(--salary-color); }
+        .sal-del { color: var(--danger); margin-left: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <select id="lang-picker" class="lang-select" onchange="changeLang(this.value)">
+        <option value="hk">繁體中文</option>
+        <option value="en">English</option>
+    </select>
+    <button class="icon-btn" onclick="toggleTheme()">🌗</button>
+</div>
+
+<div class="dashboard">
+    <div class="header-row">
+        <input type="month" id="month-picker" class="month-picker" onchange="onMonthChange()">
+    </div>
+    
+    <div class="stat-box salary" onclick="openSalaryModal()">
+        <span class="label" data-i18n="lbl_salary">本月出糧 (點擊編輯)</span>
+        <div class="amount salary-text" id="display-salary">$0</div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-box">
+            <span class="label" data-i18n="lbl_claimed">本月已 Claim</span>
+            <div class="amount claimed" id="claimed-amount">$0.00</div>
+        </div>
+        <div class="stat-box">
+            <span class="label" data-i18n="lbl_pending">總待收 (Total)</span>
+            <div class="amount pending" id="pending-amount">$0.00</div>
+            <span class="pending-note" data-i18n="lbl_all_time">*累積所有未收數</span>
+        </div>
+    </div>
+
+    <div class="total-in-row">
+        <span class="total-in-label" data-i18n="lbl_total_in">本月實收 (出糧 + Claim)</span>
+        <span class="total-in-amount" id="total-in-amount">$0.00</span>
+    </div>
+</div>
+
+<!-- 專業功能區 -->
+<div class="tool-row">
+    <button class="btn-tool" onclick="exportXLSX()">
+        📤 匯出 Excel (XLSX)
+    </button>
+    <button class="btn-tool" onclick="backupData()">
+        💾 備份資料
+    </button>
+    <label class="btn-tool" style="cursor:pointer; display:block;">
+        📥 還原
+        <input type="file" id="restore-file" style="display:none" onchange="restoreData(this)">
+    </label>
+</div>
+
+<button class="btn-bulk" onclick="openBulkModal()">
+    💰 <span data-i18n="btn_auto_claim">智能銷賬 (收到 Lump Sum)</span>
+</button>
+
+<div class="list-container" id="list-container"></div>
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- 1. 新增/編輯 Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h3 id="modal-title" data-i18n="modal_add_title">新增 Claim 數</h3>
+        <input type="hidden" id="edit-id">
+        <label class="label" data-i18n="inp_date">日期</label>
+        <input type="date" id="inp-date">
+        <label class="label" data-i18n="inp_item">項目</label>
+        <input type="text" id="inp-item">
+        <label class="label" data-i18n="inp_amount">金額 ($)</label>
+        <input type="number" id="inp-amount" placeholder="0.00" step="0.1">
+        
+        <label class="label" style="margin-top:15px;" data-i18n="lbl_receipt">收據照片</label>
+        <label class="photo-btn">
+            📷 <span data-i18n="btn_take_photo">拍攝 / 上載</span>
+            <input type="file" id="inp-photo" accept="image/*" capture="environment" style="display:none;" onchange="handlePhoto(this)">
+        </label>
+        <img id="preview-img" alt="Receipt Preview">
+        <input type="hidden" id="photo-base64">
+
+        <!-- Checkboxes -->
+        <div class="checkbox-group">
+            <div class="checkbox-item">
+                <input type="checkbox" id="inp-has-receipt">
+                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Receipt Exists)</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="inp-claimed">
+                <label for="inp-claimed" data-i18n="inp_claimed_chk">💰 已 Claim (Received)</label>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal('modal')" data-i18n="btn_cancel">取消</button>
+            <button class="btn btn-confirm" onclick="saveItem()" data-i18n="btn_confirm">確認</button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. 智能銷賬 Modal -->
+<div class="modal-overlay" id="modal-bulk">
+    <div class="modal">
+        <h3 data-i18n="modal_bulk_title">收到幾多錢？</h3>
+        <p class="label" data-i18n="bulk_desc" style="line-height:1.5; color:var(--text-sub);"></p>
+        <label class="label" data-i18n="bulk_amt">金額 ($)</label>
+        <input type="number" id="bulk-amount">
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal('modal-bulk')" data-i18n="btn_cancel">取消</button>
+            <button class="btn btn-confirm" onclick="executeBulkClaim()" data-i18n="btn_process">處理</button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. 出糧管理 Modal -->
+<div class="modal-overlay" id="modal-salary">
+    <div class="modal">
+        <h3 data-i18n="title_salary">出糧紀錄</h3>
+        <div style="background:var(--bg); padding:10px; border-radius:10px; border:1px solid var(--border);">
+            <label class="label" data-i18n="inp_date">日期</label>
+            <input type="date" id="sal-date" style="margin-bottom:5px;">
+            <label class="label" data-i18n="inp_amount">金額 ($)</label>
+            <input type="number" id="sal-amount" placeholder="0">
+            <button class="btn btn-confirm" style="margin-top:10px;" onclick="addSalary()" data-i18n="btn_add">加入</button>
+        </div>
+        <div class="salary-list" id="salary-list"></div>
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closeModal('modal-salary')" data-i18n="btn_close">關閉</button>
+        </div>
+    </div>
+</div>
+
+<!-- 4. 圖片查看 Modal -->
+<div class="modal-overlay" id="modal-view-img" onclick="closeModal('modal-view-img')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h3 data-i18n="view_receipt">收據預覽</h3>
+        <img id="view-img-src" src="">
+        <button class="btn btn-cancel" onclick="closeModal('modal-view-img')" style="margin-top:15px; width:100%;">Close</button>
+    </div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+
+    const KEY_EXP = 'claim_master_data_v7';
+    const KEY_SAL = 'claim_master_salaries_v2';
+    const KEY_LANG = 'claim_master_lang';
+
+    let expenses = JSON.parse(localStorage.getItem(KEY_EXP)) || [];
+    let salaries = JSON.parse(localStorage.getItem(KEY_SAL)) || {};
+    let currentLang = localStorage.getItem(KEY_LANG) || 'hk';
+
+    const i18n = {
+        hk: {
+            lbl_salary: "本月出糧 (點擊編輯)", lbl_claimed: "本月已 Claim", lbl_pending: "總待收 (Total)", lbl_all_time: "*累積所有未收數", lbl_total_in: "本月實收 (出糧 + Claim)",
+            title_salary: "出糧紀錄", btn_add: "加入", btn_close: "關閉",
+            btn_auto_claim: "智能銷賬 (收到 Lump Sum)", modal_add_title: "新增紀錄", modal_edit_title: "編輯紀錄",
+            inp_date: "日期", inp_item: "項目", inp_amount: "金額 ($)", 
+            inp_claimed_chk: "💰 已收到錢 (Received)", lbl_has_receipt: "🧾 有收據 (Has Receipt)",
+            btn_cancel: "取消", btn_confirm: "儲存", btn_process: "處理",
+            modal_bulk_title: "智能拆單", bulk_desc: "系統會按日期銷賬。如有餘額，可選擇轉為「出糧」。", bulk_amt: "收到金額 ($)",
+            empty_list: "本月暫無紀錄 🍃", status_claimed: "已 CLAIM", status_pending: "PENDING",
+            confirm_del: "確定刪除？", fill_all: "請填寫所有欄位！",
+            bulk_result: (count, split, extra) => `處理了 ${count} 個項目！${split ? '\n⚠️ 有拆單' : ''}${extra ? '\n💰 餘額已加入出糧紀錄' : ''}`,
+            lbl_receipt: "收據照片", btn_take_photo: "拍攝 / 上載", view_receipt: "收據預覽",
+            split_suffix: " (已付)", confirm_extra_salary: (amt) => `已銷賬所有 Pending！\n剩餘 $${amt}。\n\n要將這 $${amt} 記錄為「今日出糧」嗎？`
+        },
+        en: {
+            lbl_salary: "Salary (Edit)", lbl_claimed: "Claimed (Month)", lbl_pending: "Outstanding", lbl_all_time: "*All time", lbl_total_in: "Total In",
+            title_salary: "Salary Records", btn_add: "Add", btn_close: "Close",
+            btn_auto_claim: "Auto Reimburse", modal_add_title: "Add Item", modal_edit_title: "Edit Item",
+            inp_date: "Date", inp_item: "Item", inp_amount: "Amount ($)", 
+            inp_claimed_chk: "💰 Received", lbl_has_receipt: "🧾 Receipt Exists",
+            btn_cancel: "Cancel", btn_confirm: "Save", btn_process: "Process",
+            modal_bulk_title: "Auto Split", bulk_desc: "Clears oldest items. Surplus can be added to Salary.", bulk_amt: "Received ($)",
+            empty_list: "No records 🍃", status_claimed: "CLAIMED", status_pending: "PENDING",
+            confirm_del: "Delete?", fill_all: "Fill all fields!",
+            bulk_result: (count, split, extra) => `Processed ${count} items!${split ? '\n⚠️ Split item' : ''}${extra ? '\n💰 Surplus added to Salary' : ''}`,
+            lbl_receipt: "Photo", btn_take_photo: "Take Photo", view_receipt: "View Receipt",
+            split_suffix: " (Paid)", confirm_extra_salary: (amt) => `All pending cleared!\nRemaining $${amt}.\n\nRecord $${amt} as Salary?`
+        }
+    };
+
+    const now = new Date();
+    document.getElementById('month-picker').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    document.getElementById('sal-date').valueAsDate = now;
+    document.getElementById('lang-picker').value = currentLang;
+
+    updateUIText();
+    renderList();
+
+    // --- Core UI Functions ---
+    function changeLang(lang) { currentLang = lang; localStorage.setItem(KEY_LANG, lang); updateUIText(); renderList(); }
+    function updateUIText() { const t = i18n[currentLang]; document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); if(t[key]) el.innerText = t[key]; }); }
+    function toggleTheme() { const html = document.documentElement; html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+    function onMonthChange() { renderList(); }
+
+    // --- Data Storage ---
+    function saveExpenses() { try { localStorage.setItem(KEY_EXP, JSON.stringify(expenses)); renderList(); } catch (e) { alert("Storage Full! Delete old photos."); } }
+    function saveSalaries() { localStorage.setItem(KEY_SAL, JSON.stringify(salaries)); renderList(); }
+
+    // --- Render Logic ---
+    function renderList() {
+        const t = i18n[currentLang];
+        const monthVal = document.getElementById('month-picker').value;
+        const container = document.getElementById('list-container');
+        container.innerHTML = '';
+
+        // Salary Logic
+        const monthSalaries = salaries[monthVal] || [];
+        const totalSalary = monthSalaries.reduce((sum, s) => sum + parseFloat(s.amount), 0);
+        document.getElementById('display-salary').innerText = `$${totalSalary.toLocaleString()}`;
+
+        // Expense List
+        const currentItems = expenses.filter(item => item.date.startsWith(monthVal));
+        currentItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        let monthClaimed = 0;
+        if (currentItems.length === 0) container.innerHTML = `<div style="text-align:center; color:var(--text-sub); margin-top:30px;">${t.empty_list}</div>`;
+
+        currentItems.forEach(item => {
+            const amt = parseFloat(item.amount);
+            if (item.isClaimed) monthClaimed += amt;
+
+            const div = document.createElement('div');
+            div.className = `expense-card ${item.isClaimed ? 'claimed' : ''}`;
+            
+            // Icon Logic
+            let tags = '';
+            if (item.photo) tags += `<span class="icon-tag has-receipt" onclick="viewPhoto(event, '${item.id}')">📎 Photo</span>`;
+            if (item.hasReceipt && !item.photo) tags += `<span class="icon-tag has-receipt">🧾 Rec</span>`; // Physical receipt marked but no photo
+            
+            div.innerHTML = `
+                <div class="card-info" onclick="openModal(${item.id})">
+                    <div class="item-name">${item.item} ${tags}</div>
+                    <div class="item-date">
+                        ${item.date} 
+                        <span style="font-size:10px; color:${item.hasReceipt ? 'var(--accent)' : '#666'}; margin-left:5px;">
+                            ${item.hasReceipt ? '(有單)' : '(無單)'}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-amount" onclick="toggleStatus(event, ${item.id})">
+                    <div class="money">$${amt.toFixed(1)}</div>
+                    <div class="status-badge">${item.isClaimed ? t.status_claimed : t.status_pending}</div>
+                </div>
+                <button class="delete-btn" onclick="deleteItem(event, ${item.id})">×</button>
+            `;
+            container.appendChild(div);
+        });
+
+        // Global Stats
+        const allPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        document.getElementById('claimed-amount').innerText = `$${monthClaimed.toLocaleString()}`;
+        document.getElementById('pending-amount').innerText = `$${allPending.toLocaleString()}`;
+        document.getElementById('total-in-amount').innerText = `$${(totalSalary + monthClaimed).toLocaleString()}`;
+    }
+
+    // --- Save Logic (Update for Receipt Checkbox) ---
+    function saveItem() {
+        const t = i18n[currentLang];
+        const editId = document.getElementById('edit-id').value;
+        const date = document.getElementById('inp-date').value;
+        const item = document.getElementById('inp-item').value;
+        const amount = document.getElementById('inp-amount').value;
+        const isClaimed = document.getElementById('inp-claimed').checked;
+        const hasReceipt = document.getElementById('inp-has-receipt').checked;
+        const photo = document.getElementById('photo-base64').value;
+
+        if (!date || !item || !amount) { alert(t.fill_all); return; }
+
+        if (editId) {
+            const idx = expenses.findIndex(e => e.id == editId);
+            if(idx !== -1) {
+                expenses[idx].date = date; expenses[idx].item = item;
+                expenses[idx].amount = parseFloat(amount); expenses[idx].isClaimed = isClaimed;
+                expenses[idx].hasReceipt = hasReceipt;
+                if(photo) expenses[idx].photo = photo;
+            }
+        } else {
+            expenses.push({ id: Date.now(), date, item, amount: parseFloat(amount), isClaimed, hasReceipt, photo });
+        }
+        closeModal('modal');
+        saveExpenses();
+    }
+
+    // --- Excel Export (XLSX - Beautiful & Functional) ---
+    function exportXLSX() {
+        const t = i18n[currentLang];
+        // 1. Prepare Data Array
+        const header = ["日期", "項目", "金額 ($)", "狀態", "收據?", "電子檔備註"];
+        const rows = [];
+        
+        // Use current month filter or all? Usually people export all for record, or filtered.
+        // Let's export current filtered view for flexibility.
+        const monthVal = document.getElementById('month-picker').value;
+        const exportItems = expenses.filter(item => item.date.startsWith(monthVal));
+        exportItems.sort((a, b) => new Date(a.date) - new Date(b.date)); // Oldest first for reports
+
+        let total = 0;
+        exportItems.forEach(e => {
+            rows.push([
+                e.date,
+                e.item,
+                parseFloat(e.amount),
+                e.isClaimed ? "已 Claim" : "Pending",
+                e.hasReceipt ? "有" : "無",
+                e.photo ? "有相片" : ""
+            ]);
+            total += parseFloat(e.amount);
+        });
+
+        // Add Summary Row
+        rows.push(["", "", "", "", "", ""]); // Spacer
+        rows.push(["總計 (Total)", "", total, "", "", ""]);
+
+        // 2. Create Sheet
+        const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+        // 3. Simple Column Width Adjustments (Auto-width is hard in mini version, manual setting is safer)
+        ws['!cols'] = [
+            { wch: 12 }, // Date
+            { wch: 25 }, // Item
+            { wch: 10 }, // Amount
+            { wch: 10 }, // Status
+            { wch: 8 },  // Receipt
+            { wch: 10 }  // Note
+        ];
+
+        // 4. Workbook & Download
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Claims_${monthVal}`);
+        XLSX.writeFile(wb, `Claim_Report_${monthVal}.xlsx`);
+    }
+
+    // --- Other Functions (Bulk, Salary, Photo, Backup) ---
+    function executeBulkClaim() {
+        const t = i18n[currentLang];
+        let budget = parseFloat(document.getElementById('bulk-amount').value);
+        if (!budget || budget <= 0) return;
+        let pendingItems = expenses.filter(e => !e.isClaimed);
+        pendingItems.sort((a, b) => new Date(a.date) - new Date(b.date));
+        let count = 0; let splitOccurred = false;
+        for (let item of pendingItems) {
+            if (budget <= 0) break;
+            if (budget >= item.amount) {
+                item.isClaimed = true; budget -= item.amount; count++;
+            } else {
+                const remaining = item.amount - budget;
+                expenses.push({ id: Date.now(), date: item.date, item: item.item + " (Balance)", amount: remaining, isClaimed: false, hasReceipt: item.hasReceipt, photo: item.photo });
+                item.item = item.item + t.split_suffix; item.amount = budget; item.isClaimed = true;
+                budget = 0; count++; splitOccurred = true; break;
+            }
+        }
+        if (budget > 0 && confirm(t.confirm_extra_salary(budget.toFixed(1)))) {
+            const today = new Date();
+            const mKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+            if(!salaries[mKey]) salaries[mKey] = [];
+            salaries[mKey].push({ id: Date.now(), date: today.toISOString().split('T')[0], amount: budget });
+            saveSalaries();
+        }
+        saveExpenses(); closeModal('modal-bulk'); alert(t.bulk_result(count, splitOccurred, budget > 0));
+    }
+
+    function toggleStatus(e, id) { e.stopPropagation(); const idx = expenses.findIndex(e => e.id === id); if (idx !== -1) { expenses[idx].isClaimed = !expenses[idx].isClaimed; saveExpenses(); } }
+    function deleteItem(e, id) { e.stopPropagation(); const t = i18n[currentLang]; if(confirm(t.confirm_del)) { expenses = expenses.filter(e => e.id !== id); saveExpenses(); } }
+    
+    function openModal(id = null) {
+        const t = i18n[currentLang];
+        document.getElementById('photo-base64').value = ''; document.getElementById('inp-photo').value = ''; document.getElementById('preview-img').style.display = 'none';
+        if (id) {
+            const item = expenses.find(e => e.id === id);
+            document.getElementById('modal-title').innerText = t.modal_edit_title; document.getElementById('edit-id').value = id; document.getElementById('inp-date').value = item.date; document.getElementById('inp-item').value = item.item; document.getElementById('inp-amount').value = item.amount; 
+            document.getElementById('inp-claimed').checked = item.isClaimed;
+            document.getElementById('inp-has-receipt').checked = item.hasReceipt; // Load status
+            if(item.photo) { document.getElementById('preview-img').src = item.photo; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = item.photo; }
+        } else {
+            document.getElementById('modal-title').innerText = t.modal_add_title; document.getElementById('edit-id').value = ''; document.getElementById('inp-date').valueAsDate = new Date(); document.getElementById('inp-item').value = ''; document.getElementById('inp-amount').value = ''; document.getElementById('inp-claimed').checked = false;
+            document.getElementById('inp-has-receipt').checked = true; // Default true
+        }
+        document.getElementById('modal').style.display = 'flex';
+    }
+    
+    function handlePhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const MAX_WIDTH = 800; let w = img.width; let h = img.height;
+                    if (w > MAX_WIDTH) { h *= MAX_WIDTH / w; w = MAX_WIDTH; }
+                    canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
+                    const data = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('preview-img').src = data; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = data;
+                    // Auto check receipt if photo uploaded
+                    document.getElementById('inp-has-receipt').checked = true;
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function backupData() { const data = { expenses, salaries, timestamp: new Date() }; const url = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data)); const link = document.createElement('a'); link.href = url; link.download = `Claim_Backup.json`; link.click(); }
+    function restoreData(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = e => { try { const d = JSON.parse(e.target.result); if(confirm("Restore data?")) { expenses = d.expenses || []; salaries = d.salaries || {}; saveExpenses(); saveSalaries(); alert("Restored!"); location.reload(); } } catch(err) { alert("Invalid File"); } }; reader.readAsText(file); input.value = ''; }
+    
+    function addSalary() { const month = document.getElementById('month-picker').value; const date = document.getElementById('sal-date').value; const amt = parseFloat(document.getElementById('sal-amount').value); if(!date || !amt) return; if(!salaries[month]) salaries[month] = []; salaries[month].push({id:Date.now(), date, amount:amt}); document.getElementById('sal-amount').value = ''; saveSalaries(); openSalaryModal(); }
+    function deleteSalary(id) { const month = document.getElementById('month-picker').value; if(salaries[month]) { salaries[month] = salaries[month].filter(s => s.id !== id); saveSalaries(); openSalaryModal(); } }
+    function renderSalaryList() { const month = document.getElementById('month-picker').value; const list = document.getElementById('salary-list'); list.innerHTML = ''; (salaries[month]||[]).forEach(s => { list.innerHTML += `<div class="salary-item"><span>${s.date}</span><span>$${s.amount} <span class="sal-del" onclick="deleteSalary(${s.id})">×</span></span></div>`; }); }
+    function openSalaryModal() { renderSalaryList(); document.getElementById('modal-salary').style.display = 'flex'; }
+    function openBulkModal() { document.getElementById('bulk-amount').value = ''; document.getElementById('modal-bulk').style.display = 'flex'; document.getElementById('bulk-amount').focus(); }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function viewPhoto(e, id) { e.stopPropagation(); const item = expenses.find(i => i.id == id); if(item && item.photo) { document.getElementById('view-img-src').src = item.photo; document.getElementById('modal-view-img').style.display = 'flex'; } }
+</script>
+
+</body>
+</html>
