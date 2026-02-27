@@ -445,25 +445,50 @@
         const t = i18n[currentLang];
         const header = ["Date", "Item", "Amount", "Status", "Receipt?", "Photo Note"];
         const rows = [];
+        
+        // 1. 獲取當月數據 (用於列表)
         const monthVal = document.getElementById('month-picker').value;
         const exportItems = expenses.filter(item => item.date.startsWith(monthVal));
         exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        let total = 0;
+        // 2. 計算本月總額
+        let monthTotal = 0;
         exportItems.forEach(e => {
-            rows.push([e.date, e.item, parseFloat(e.amount), e.isClaimed?"Claimed":"Pending", e.hasReceipt?"Yes":"No", e.photo?"Attached":""]);
-            total += parseFloat(e.amount);
+            rows.push([
+                e.date, 
+                e.item, 
+                parseFloat(e.amount), 
+                e.isClaimed ? "Claimed" : "Pending", 
+                e.hasReceipt ? "Yes" : "No", 
+                e.photo ? "Attached" : ""
+            ]);
+            monthTotal += parseFloat(e.amount);
         });
-        rows.push(["", "", "", "", "", ""]);
-        rows.push(["Total", "", total, "", "", ""]);
 
+        // 3. 計算【歷來所有】Pending 總額 (不分月份)
+        // 這是你要的新功能：遍歷所有 expenses，只要未 Claim 就加起來
+        const globalPending = expenses
+            .filter(e => !e.isClaimed)
+            .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+        // 4. 加入總結行 (空一行，然後顯示統計)
+        rows.push(["", "", "", "", "", ""]); // 空行分隔
+        
+        // 本月總開支
+        rows.push([t.lbl_excel_month_total || "Month Total", "", monthTotal, "", "", ""]);
+        
+        // 🔥 新增：歷來待收總額
+        rows.push([t.lbl_excel_global_pending || "Global Pending", "", globalPending, "", "", ""]);
+
+        // 5. 生成檔案
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
         ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 }];
+        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Claims_${monthVal}`);
         XLSX.writeFile(wb, `Claim_Report_${monthVal}.xlsx`);
     }
-
+    
     function executeBulkClaim() {
         const t = i18n[currentLang];
         let budget = parseFloat(document.getElementById('bulk-amount').value);
