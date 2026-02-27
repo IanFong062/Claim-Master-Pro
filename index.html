@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Claim Master v8.1</title>
+    <title>Claim Master v8.2</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -34,11 +34,12 @@
             min-height: 100vh; transition: 0.3s; padding-bottom: 90px;
         }
 
-        /* Toolbar & Layout */
+        /* Toolbar */
         .toolbar { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .lang-select { background: var(--btn-bg); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; }
         .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
-        
+
+        /* Dashboard */
         .dashboard { width: 100%; max-width: 500px; background: var(--card-bg); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid var(--border); box-sizing: border-box; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .month-picker { background: var(--bg); color: var(--text-main); border: 1px solid var(--border); padding: 5px 10px; border-radius: 8px; font-size: 14px; outline: none; }
@@ -58,22 +59,24 @@
         .total-in-label { font-size: 14px; color: var(--text-sub); }
         .total-in-amount { font-size: 24px; color: var(--text-main); font-weight: bold; }
 
-        /* Tools & Search */
+        /* Tools */
         .tool-row { width:100%; max-width:500px; display:flex; gap:10px; margin-bottom:15px; }
         .btn-tool { flex: 1; padding: 12px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); border-radius: 10px; font-size: 13px; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: bold; }
         .btn-tool:active { background: var(--bg); }
         
-        /* 🔥 Feature: Search Bar */
-        .search-bar { 
-            width: 100%; max-width: 500px; padding: 12px; background: var(--card-bg); 
-            border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; 
-            margin-bottom: 15px; font-size: 14px; box-sizing: border-box; outline: none;
-        }
-        .search-bar:focus { border-color: var(--accent); }
+        /* Storage Bar */
+        .storage-container { width: 100%; max-width: 500px; margin-top: 5px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .storage-track { flex: 1; height: 6px; background: var(--btn-bg); border-radius: 3px; overflow: hidden; }
+        .storage-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.5s; }
+        .storage-text { font-size: 10px; color: var(--text-sub); width: 70px; text-align: right; }
 
         .btn-bulk { width: 100%; max-width: 500px; padding: 12px; background: var(--btn-bg); color: var(--text-main); border: 1px dashed var(--accent); border-radius: 12px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
         
-        /* List */
+        /* Search Bar */
+        .search-bar { width: 100%; max-width: 500px; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; margin-bottom: 15px; font-size: 14px; box-sizing: border-box; outline: none; }
+        .search-bar:focus { border-color: var(--accent); }
+
+        /* List & Items */
         .list-container { width: 100%; max-width: 500px; }
         .expense-card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--pending); box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .expense-card.claimed { border-left-color: var(--accent); opacity: 0.6; }
@@ -94,20 +97,15 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(5px); }
         .modal { background: var(--card-bg); width: 85%; max-width: 350px; padding: 25px; border-radius: 15px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
         .modal h3 { margin-top: 0; color: var(--accent); }
-        
         input[type="text"], input[type="date"], input[type="number"] { width: 100%; padding: 12px; margin: 8px 0; background: var(--bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         .btn-cancel { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
         .btn-confirm { background: var(--accent); color: #000; }
         
-        /* 🔥 Feature: Smart Categories */
+        /* Category Icons */
         .cat-row { display: flex; gap: 8px; margin-bottom: 10px; justify-content: space-between; }
-        .cat-btn { 
-            flex: 1; padding: 10px 5px; background: var(--bg); border: 1px solid var(--border); 
-            border-radius: 8px; cursor: pointer; font-size: 18px; text-align: center; transition: 0.2s;
-        }
+        .cat-btn { flex: 1; padding: 10px 5px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 18px; text-align: center; transition: 0.2s; }
         .cat-btn:active { background: var(--accent-dim); border-color: var(--accent); transform: scale(0.95); }
 
         .checkbox-group { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
@@ -164,7 +162,7 @@
 </div>
 
 <div class="tool-row">
-    <button class="btn-tool" onclick="exportXLSX()">📤 Excel</button>
+    <button class="btn-tool" onclick="exportXLSX()">📤 Excel (XLSX)</button>
     <button class="btn-tool" onclick="backupData()">💾 Backup</button>
     <label class="btn-tool" style="cursor:pointer; display:block;">
         📥 Restore
@@ -172,11 +170,17 @@
     </label>
 </div>
 
+<div class="storage-container">
+    <div class="storage-track">
+        <div class="storage-fill" id="storage-fill"></div>
+    </div>
+    <div class="storage-text" id="storage-text">0% Used</div>
+</div>
+
 <button class="btn-bulk" onclick="openBulkModal()">
     💰 <span data-i18n="btn_auto_claim">智能銷賬 (收到 Lump Sum)</span>
 </button>
 
-<!-- 🔥 Feature: Search Bar -->
 <input type="search" id="search-input" class="search-bar" placeholder="🔍 搜尋項目..." oninput="renderList()" data-i18n="ph_search">
 
 <div class="list-container" id="list-container"></div>
@@ -191,8 +195,6 @@
         <input type="date" id="inp-date">
         
         <label class="label" data-i18n="inp_item">項目</label>
-        
-        <!-- 🔥 Feature: Smart Category Icons -->
         <div class="cat-row">
             <div class="cat-btn" onclick="setCategory('🚕 Taxi')">🚕</div>
             <div class="cat-btn" onclick="setCategory('🍽️ Food')">🍽️</div>
@@ -200,7 +202,6 @@
             <div class="cat-btn" onclick="setCategory('🛒 Misc')">🛒</div>
             <div class="cat-btn" onclick="setCategory('📎 Office')">📎</div>
         </div>
-
         <input type="text" id="inp-item" placeholder="Item Name">
         
         <label class="label" data-i18n="inp_amount">金額 ($)</label>
@@ -217,7 +218,7 @@
         <div class="checkbox-group">
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-has-receipt">
-                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Rec. Exists)</label>
+                <label for="inp-has-receipt" data-i18n="lbl_has_receipt">🧾 有收據 (Receipt Exists)</label>
             </div>
             <div class="checkbox-item">
                 <input type="checkbox" id="inp-claimed">
@@ -298,7 +299,7 @@
             bulk_result: (count, split, extra) => `處理了 ${count} 個項目！${split ? '\n⚠️ 有拆單' : ''}${extra ? '\n💰 餘額已加入出糧紀錄' : ''}`,
             lbl_receipt: "收據照片", btn_take_photo: "拍攝 / 上載", view_receipt: "收據預覽",
             split_suffix: " (已付)", confirm_extra_salary: (amt) => `已銷賬所有 Pending！\n剩餘 $${amt}。\n\n要將這 $${amt} 記錄為「今日出糧」嗎？`,
-            ph_search: "🔍 搜尋項目..."
+            ph_search: "🔍 搜尋項目...",
             lbl_excel_month_total: "本月總開支 (Month Total)",
             lbl_excel_global_pending: "歷來所有待收總額 (Total Pending All-Time)"
         },
@@ -315,7 +316,7 @@
             bulk_result: (count, split, extra) => `Processed ${count} items!${split ? '\n⚠️ Split item' : ''}${extra ? '\n💰 Surplus added to Salary' : ''}`,
             lbl_receipt: "Photo", btn_take_photo: "Take Photo", view_receipt: "View Receipt",
             split_suffix: " (Paid)", confirm_extra_salary: (amt) => `All pending cleared!\nRemaining $${amt}.\n\nRecord $${amt} as Salary?`,
-            ph_search: "🔍 Search Item..."
+            ph_search: "🔍 Search Item...",
             lbl_excel_month_total: "Month Total",
             lbl_excel_global_pending: "Total Pending (All-Time)"
         }
@@ -328,8 +329,8 @@
 
     updateUIText();
     renderList();
+    checkStorage();
 
-    // --- Core UI Functions ---
     function changeLang(lang) { currentLang = lang; localStorage.setItem(KEY_LANG, lang); updateUIText(); renderList(); }
     function updateUIText() { 
         const t = i18n[currentLang]; 
@@ -339,24 +340,27 @@
     function toggleTheme() { const html = document.documentElement; html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
     function onMonthChange() { renderList(); }
 
-    // --- Data Storage ---
-    function saveExpenses() { try { localStorage.setItem(KEY_EXP, JSON.stringify(expenses)); renderList(); } catch (e) { alert("Storage Full! Delete old photos."); } }
+    function saveExpenses() { try { localStorage.setItem(KEY_EXP, JSON.stringify(expenses)); renderList(); checkStorage(); } catch (e) { alert("Storage Full! Delete old photos."); } }
     function saveSalaries() { localStorage.setItem(KEY_SAL, JSON.stringify(salaries)); renderList(); }
 
-    // --- Render Logic (With Filter) ---
+    function checkStorage() {
+        let total = 0; for (let x in localStorage) { if (localStorage.hasOwnProperty(x)) total += ((localStorage[x].length * 2) / 1024 / 1024); }
+        const limit = 5; const pct = Math.min((total / limit) * 100, 100).toFixed(1);
+        document.getElementById('storage-fill').style.width = pct + '%'; document.getElementById('storage-text').innerText = pct + '% Used';
+        if (pct > 80) document.getElementById('storage-fill').style.backgroundColor = 'var(--danger)'; else document.getElementById('storage-fill').style.backgroundColor = 'var(--accent)';
+    }
+
     function renderList() {
         const t = i18n[currentLang];
         const monthVal = document.getElementById('month-picker').value;
-        const searchVal = document.getElementById('search-input').value.toLowerCase(); // Get Search text
+        const searchVal = document.getElementById('search-input').value.toLowerCase();
         const container = document.getElementById('list-container');
         container.innerHTML = '';
 
-        // Salary Logic
         const monthSalaries = salaries[monthVal] || [];
         const totalSalary = monthSalaries.reduce((sum, s) => sum + parseFloat(s.amount), 0);
         document.getElementById('display-salary').innerText = `$${totalSalary.toLocaleString()}`;
 
-        // 🔥 Logic: Filter by Month AND Search Keyword
         const currentItems = expenses.filter(item => {
             const matchMonth = item.date.startsWith(monthVal);
             const matchSearch = item.item.toLowerCase().includes(searchVal);
@@ -398,9 +402,8 @@
             container.appendChild(div);
         });
 
-        // Stats (Calculate based on all data, not just filtered search)
         const allPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
-        // Recalculate claimed for the MONTH (ignoring search filter for dashboard stats)
+        // Recalculate MONTHLY claimed for dashboard (ignoring search filter)
         const totalMonthClaimed = expenses.filter(item => item.date.startsWith(monthVal) && item.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
         document.getElementById('claimed-amount').innerText = `$${totalMonthClaimed.toLocaleString()}`;
@@ -408,11 +411,7 @@
         document.getElementById('total-in-amount').innerText = `$${(totalSalary + totalMonthClaimed).toLocaleString()}`;
     }
 
-    // --- Save Logic ---
-    // 🔥 Feature: Set Category
-    function setCategory(catName) {
-        document.getElementById('inp-item').value = catName;
-    }
+    function setCategory(catName) { document.getElementById('inp-item').value = catName; }
 
     function saveItem() {
         const t = i18n[currentLang];
@@ -445,50 +444,30 @@
         const t = i18n[currentLang];
         const header = ["Date", "Item", "Amount", "Status", "Receipt?", "Photo Note"];
         const rows = [];
-        
-        // 1. 獲取當月數據 (用於列表)
         const monthVal = document.getElementById('month-picker').value;
         const exportItems = expenses.filter(item => item.date.startsWith(monthVal));
         exportItems.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // 2. 計算本月總額
         let monthTotal = 0;
         exportItems.forEach(e => {
-            rows.push([
-                e.date, 
-                e.item, 
-                parseFloat(e.amount), 
-                e.isClaimed ? "Claimed" : "Pending", 
-                e.hasReceipt ? "Yes" : "No", 
-                e.photo ? "Attached" : ""
-            ]);
+            rows.push([e.date, e.item, parseFloat(e.amount), e.isClaimed?"Claimed":"Pending", e.hasReceipt?"Yes":"No", e.photo?"Attached":""]);
             monthTotal += parseFloat(e.amount);
         });
 
-        // 3. 計算【歷來所有】Pending 總額 (不分月份)
-        // 這是你要的新功能：遍歷所有 expenses，只要未 Claim 就加起來
-        const globalPending = expenses
-            .filter(e => !e.isClaimed)
-            .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+        // Global Pending Calculation
+        const globalPending = expenses.filter(e => !e.isClaimed).reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-        // 4. 加入總結行 (空一行，然後顯示統計)
-        rows.push(["", "", "", "", "", ""]); // 空行分隔
-        
-        // 本月總開支
+        rows.push(["", "", "", "", "", ""]);
         rows.push([t.lbl_excel_month_total || "Month Total", "", monthTotal, "", "", ""]);
-        
-        // 🔥 新增：歷來待收總額
         rows.push([t.lbl_excel_global_pending || "Global Pending", "", globalPending, "", "", ""]);
 
-        // 5. 生成檔案
         const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
         ws['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 }];
-        
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Claims_${monthVal}`);
         XLSX.writeFile(wb, `Claim_Report_${monthVal}.xlsx`);
     }
-    
+
     function executeBulkClaim() {
         const t = i18n[currentLang];
         let budget = parseFloat(document.getElementById('bulk-amount').value);
@@ -531,7 +510,7 @@
             if(item.photo) { document.getElementById('preview-img').src = item.photo; document.getElementById('preview-img').style.display = 'block'; document.getElementById('photo-base64').value = item.photo; }
         } else {
             document.getElementById('modal-title').innerText = t.modal_add_title; document.getElementById('edit-id').value = ''; document.getElementById('inp-date').valueAsDate = new Date(); document.getElementById('inp-item').value = ''; document.getElementById('inp-amount').value = ''; document.getElementById('inp-claimed').checked = false;
-            document.getElementById('inp-has-receipt').checked = true;
+            document.getElementById('inp-has-receipt').checked = true; // Default true for new
         }
         document.getElementById('modal').style.display = 'flex';
     }
